@@ -1,95 +1,249 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.0.2)
+project(opw_kinematics)
 
-# Extract package name and version
-find_package(ros_industrial_cmake_boilerplate REQUIRED)
-extract_package_metadata(pkg)
-project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
 
-include(cmake/opw_kinematics_macros.cmake)
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  eigen_conversions
+  roscpp
+  rospy
+  std_msgs
+  tf2_eigen
+  tf2_ros
+  tf_conversions
+  descartes_core
+  descartes_planner
+  descartes_moveit
+  descartes_utilities
+)
 
-find_package(Eigen3 REQUIRED)
-if(NOT EIGEN3_INCLUDE_DIRS)
-  set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
-endif()
+## System dependencies are found with CMake's conventions
+# find_package(Boost REQUIRED COMPONENTS system)
 
-# Load variable for clang tidy args, compiler options and cxx version
-opw_variables()
 
-if(NOT MSVC)
-  initialize_code_coverage(ENABLE ${OPW_ENABLE_CODE_COVERAGE})
-  add_code_coverage_all_targets(ENABLE ${OPW_ENABLE_CODE_COVERAGE})
-endif()
+## Uncomment this if the package has a setup.py. This macro ensures
+## modules and global scripts declared therein get installed
+## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
+# catkin_python_setup()
 
-# Create interface target
-add_library(${PROJECT_NAME} INTERFACE)
-target_compile_definitions(${PROJECT_NAME} INTERFACE ${OPW_COMPILE_DEFINITIONS})
-target_link_libraries(${PROJECT_NAME} INTERFACE)
-target_cxx_version(${PROJECT_NAME} INTERFACE VERSION ${OPW_CXX_VERSION})
-target_compile_options(${PROJECT_NAME} INTERFACE ${OPW_COMPILE_OPTIONS_PUBLIC})
-target_clang_tidy(${PROJECT_NAME} ENABLE ${OPW_ENABLE_CLANG_TIDY} ARGUMENTS ${OPW_CLANG_TIDY_ARGS})
-target_code_coverage(
+################################################
+## Declare ROS messages, services and actions ##
+################################################
+
+## To declare and build messages, services or actions from within this
+## package, follow these steps:
+## * Let MSG_DEP_SET be the set of packages whose message types you use in
+##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
+## * In the file package.xml:
+##   * add a build_depend tag for "message_generation"
+##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
+##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
+##     but can be declared for certainty nonetheless:
+##     * add a exec_depend tag for "message_runtime"
+## * In this file (CMakeLists.txt):
+##   * add "message_generation" and every package in MSG_DEP_SET to
+##     find_package(catkin REQUIRED COMPONENTS ...)
+##   * add "message_runtime" and every package in MSG_DEP_SET to
+##     catkin_package(CATKIN_DEPENDS ...)
+##   * uncomment the add_*_files sections below as needed
+##     and list every .msg/.srv/.action file to be processed
+##   * uncomment the generate_messages entry below
+##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
+
+## Generate messages in the 'msg' folder
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
+
+## Generate services in the 'srv' folder
+# add_service_files(
+#   FILES
+#   Service1.srv
+#   Service2.srv
+# )
+
+## Generate actions in the 'action' folder
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
+
+## Generate added messages and services with any dependencies listed here
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+# )
+
+################################################
+## Declare ROS dynamic reconfigure parameters ##
+################################################
+
+## To declare and build dynamic reconfigure parameters within this
+## package, follow these steps:
+## * In the file package.xml:
+##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
+## * In this file (CMakeLists.txt):
+##   * add "dynamic_reconfigure" to
+##     find_package(catkin REQUIRED COMPONENTS ...)
+##   * uncomment the "generate_dynamic_reconfigure_options" section below
+##     and list every .cfg file to be processed
+
+## Generate dynamic reconfigure parameters in the 'cfg' folder
+# generate_dynamic_reconfigure_options(
+#   cfg/DynReconf1.cfg
+#   cfg/DynReconf2.cfg
+# )
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if your package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+  INCLUDE_DIRS 
+    include
+  LIBRARIES 
+    ${PROJECT_NAME}
+  CATKIN_DEPENDS 
+    roscpp 
+    rospy 
+    std_msgs
+    tf2_eigen
+    tf2_ros
+    tf2_geometry_msgs
+    tf_conversions
+    eigen_conversions
+    descartes_core
+    descartes_planner
+    descartes_moveit
+    descartes_utilities
+#  DEPENDS system_lib
+)
+
+###########
+## Build ##
+###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+# Declare a C++ library
+add_library(
   ${PROJECT_NAME}
-  INTERFACE
-  ALL
-  ENABLE ${OPW_ENABLE_CODE_COVERAGE})
-target_include_directories(${PROJECT_NAME} INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                                     "$<INSTALL_INTERFACE:include>")
-target_include_directories(${PROJECT_NAME} SYSTEM INTERFACE ${EIGEN3_INCLUDE_DIRS})
+  src/opw_tool.cpp
+)
 
-# Create test executable
-add_executable(${PROJECT_NAME}_node src/test.cpp)
-target_link_libraries(${PROJECT_NAME}_node PRIVATE ${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-target_cxx_version(${PROJECT_NAME}_node PRIVATE VERSION ${OPW_CXX_VERSION})
-target_compile_options(${PROJECT_NAME}_node PRIVATE ${OPW_COMPILE_OPTIONS_PRIVATE})
-target_clang_tidy(${PROJECT_NAME}_node ENABLE ${OPW_ENABLE_CLANG_TIDY})
-target_include_what_you_use(${PROJECT_NAME}_node ENABLE ${OPW_ENABLE_TESTING} ARGUMENTS ${DEFAULT_IWYU_ARGS})
-target_cppcheck(${PROJECT_NAME}_node ENABLE ${OPW_ENABLE_TESTING} ARGUMENTS ${DEFAULT_CPPCHECK_ARGS})
-target_code_coverage(
-  ${PROJECT_NAME}_node
-  PRIVATE
-  ALL
-  ENABLE ${OPW_ENABLE_CODE_COVERAGE})
+target_link_libraries(
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+)
 
-# Install
-configure_package(NAMESPACE opw_kinematics TARGETS ${PROJECT_NAME} DEPENDENCIES Eigen3)
+## Add cmake target dependencies of the library
+## as an example, code may need to be generated before libraries
+## either from message generation or dynamic reconfigure
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-# Mark cpp header files for installation
+## Declare a C++ executable
+## With catkin_make all packages are built within a single CMake context
+## The recommended prefix ensures that target names across packages don't collide
+# add_executable(${PROJECT_NAME}_node src/robotics_toolbox_node.cpp)
+
+add_executable(${PROJECT_NAME}_test_node 
+  src/test.cpp)
+
+target_link_libraries(${PROJECT_NAME}_test_node
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
+
+## Rename C++ executable without prefix
+## The above recommended prefix causes long target names, the following renames the
+## target back to the shorter version for ease of user use
+## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
+set_target_properties(${PROJECT_NAME}_test_node PROPERTIES OUTPUT_NAME node PREFIX "")
+
+## Add cmake target dependencies of the executable
+## same as for the library above
+add_dependencies(${PROJECT_NAME}_test_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(
+  ${PROJECT_NAME}_test_node
+  ${catkin_LIBRARIES}
+)
+
+#############
+## Install ##
+#############
+
+# all install targets should use catkin DESTINATION variables
+# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
+
+## Mark executable scripts (Python etc.) for installation
+## in contrast to setup.py, you can choose the destination
+# catkin_install_python(PROGRAMS
+#   scripts/my_python_script
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+
+## Mark executables for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
+# install(TARGETS ${PROJECT_NAME}_node
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+
+## Mark libraries for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
 install(
-  DIRECTORY include/${PROJECT_NAME}
-  DESTINATION include
-  FILES_MATCHING
-  PATTERN "*.h"
-  PATTERN "*.hpp"
-  PATTERN "*.hxx"
-  PATTERN ".svn" EXCLUDE)
+  TARGETS
+    ${PROJECT_NAME}
+    ${PROJECT_NAME}_test_node
+  ARCHIVE DESTINATION 
+    ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION 
+    ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION 
+    ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
 
-install(FILES "${CMAKE_CURRENT_LIST_DIR}/cmake/opw_kinematics_macros.cmake" DESTINATION lib/cmake/${PROJECT_NAME})
+## Mark cpp header files for installation
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
 
-# Testing
-if(OPW_ENABLE_TESTING)
-  enable_testing()
-  add_run_tests_target(ENABLE ${OPW_ENABLE_RUN_TESTING})
-  add_subdirectory(test)
-endif()
+## Mark other files for installation (e.g. launch and bag files, etc.)
+# install(FILES
+#   # myfile1
+#   # myfile2
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# )
 
-if(OPW_PACKAGE)
-  cpack(
-    VERSION
-    ${pkg_extracted_version}
-    MAINTAINER
-    <https://github.com/Jmeyer1292/opw_kinematics>
-    VENDOR
-    "ROS-Industrial"
-    DESCRIPTION
-    "${PROJECT_NAME}"
-    LICENSE_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/LICENSE
-    README_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/Readme.md
-    LINUX_DEPENDS
-    "libeigen3-dev"
-    WINDOWS_DEPENDS
-    "Eigen")
-endif()
+#############
+## Testing ##
+#############
+
+## Add gtest based cpp test target and link libraries
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_robotics_toolbox.cpp)
+# if(TARGET ${PROJECT_NAME}-test)
+#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+# endif()
+
+## Add folders to be run by python nosetests
+# catkin_add_nosetests(test)
